@@ -1,55 +1,72 @@
 package com.example.merchantapp.model;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
-/**
- * 用户实体
- * 用户信息，包括用户名、密码、角色等
- */
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import java.util.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
-public class User {
-
+@Table(name = "users")
+public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true, nullable = false, length = 50)
     private String username;
 
     @Column(nullable = false)
     private String password;
 
-    private String role;
+    // 用户角色，多对多关系
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles",
+        joinColumns = @JoinColumn(name="user_id"),
+        inverseJoinColumns = @JoinColumn(name="role_id"))
+    private Set<Role> roles = new HashSet<>();
 
-    public Long getId() {
-        return id;
+    // 其它用户属性（如邮箱、姓名等）可根据需要添加
+
+    // 返回用户的权限集合（将角色名转换为Spring Security需要的GrantedAuthority）
+    @JsonIgnore
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        for (Role role : roles) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+        }
+        return authorities;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    // 以下几个方法均返回true，如需锁定或过期用户可修改逻辑
+    @JsonIgnore
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
     }
-
-    public String getUsername() {
-        return username;
+    @JsonIgnore
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
     }
-
-    public void setUsername(String username) {
-        this.username = username;
+    @JsonIgnore
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
     }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
+    @JsonIgnore
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }

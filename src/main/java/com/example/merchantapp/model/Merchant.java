@@ -9,14 +9,20 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "roles")
-public class Role {
+@Table(name = "merchants")
+public class Merchant {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 50)
+    @Column(nullable = false)
     private String name;
 
-    // 可加入描述等字段
+    // 商家所属行业分类，多对一关系
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
+
+    private String address;  // 地址
+    private String contact;  // 联系方式（电话或邮箱）
 }
