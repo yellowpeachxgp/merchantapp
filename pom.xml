@@ -1,94 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- 继承 Spring Boot 3.5.0-SNAPSHOT 父 POM 来管理依赖 -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.0</version>
-        <relativePath/>  <!-- Spring Boot 父依赖 -->
+        <version>3.5.0-SNAPSHOT</version>
+        <relativePath/>  <!-- 如果父 POM 不在本地则从仓库下载 -->
     </parent>
 
-    <groupId>com.example</groupId>
-    <artifactId>merchantapp</artifactId>
+    <!-- 项目信息 -->
+    <groupId>com.example</groupId>         <!-- 请根据实际情况修改 -->
+    <artifactId>merchantapp</artifactId>   <!-- 项目Artifact名称 -->
     <version>0.0.1-SNAPSHOT</version>
     <name>merchantapp</name>
-    <description>Merchant Management System</description>
+    <description>Merchant Application</description>
 
+    <!-- Java 编译版本属性 -->
     <properties>
-        <java.version>17</java.version>  <!-- 使用 Java 17 -->
+        <java.version>17</java.version>    <!-- 使用 Java 17 编译 (可根据需要升级) -->
     </properties>
 
     <dependencies>
-        <!-- Spring Boot 基础依赖 -->
+        <!-- Spring Boot 核心和Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <!-- Spring Data JPA 和 MySQL 驱动 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <scope>runtime</scope>
-        </dependency>
+
         <!-- Spring Security 安全框架 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-        <!-- Spring AOP 切面支持 -->
+
+        <!-- Spring Data JPA （包含Hibernate，对应 Jakarta Persistence API） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-        <!-- JWT 支持：JJWT 库 -->
+
+        <!-- MySQL 驱动 (Connector/J)，使用新坐标 com.mysql:mysql-connector-j -->
         <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-            <version>0.11.5</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <version>0.11.5</version>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
         </dependency>
+
+        <!-- JWT库，例如 Java JWT (jjwt) -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <version>0.11.5</version>
-            <scope>runtime</scope>
+            <artifactId>jjwt</artifactId>
+            <version>0.12.3</version>  <!-- 指定最新版本的 JWT 库 -->
         </dependency>
-        <!-- Lombok （用于简化实体类代码） -->
+
+        <!-- Lombok，用于自动生成 getter/setter 等 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.24</version>
-            <scope>provided</scope>
+            <version>1.18.28</version>      <!-- Lombok 最新稳定版 -->
+            <scope>provided</scope>        <!-- 仅编译时需要，运行时不打包 -->
+        </dependency>
+
+        <!-- 测试依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- Spring Boot Maven 插件 -->
+            <!-- Spring Boot Maven 插件，用于打包可执行JAR -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.5.0-SNAPSHOT</version>  <!-- 确保使用对应的3.5.0-SNAPSHOT版本 -->
                 <executions>
                     <execution>
                         <goals>
-                            <goal>repackage</goal>  <!-- 可执行 jar 打包 -->
+                            <goal>repackage</goal>  <!-- 将项目打包成可执行Jar -->
                         </goals>
                     </execution>
                 </executions>
             </plugin>
+            <!-- Maven Compiler插件，使用上面定义的Java版本编译 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <!-- Spring 仓库配置：包含 Snapshots 仓库以获取 3.5.0-SNAPSHOT 版本 -->
+    <repositories>
+        <repository>
+            <id>spring-snapshot</id>
+            <name>Spring Snapshot Repository</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>spring-snapshot</id>
+            <name>Spring Snapshot Plugin Repository</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </pluginRepository>
+    </pluginRepositories>
+
 </project>

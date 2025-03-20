@@ -3,19 +3,13 @@ package com.example.merchantapp.controller;
 import com.example.merchantapp.model.Category;
 import com.example.merchantapp.repository.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
-import java.util.Optional;
 
-/**
- * 行业分类控制器
- * 提供行业分类的增删改查
- */
 @RestController
 @RequestMapping("/api/categories")
 public class CategoryController {
-
     @Autowired
     private CategoryRepository categoryRepository;
 
@@ -24,24 +18,31 @@ public class CategoryController {
         return categoryRepository.findAll();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
+        return categoryRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public Category createCategory(@RequestBody Category category) {
         return categoryRepository.save(category);
     }
 
-    @GetMapping("/{id}")
-    public Optional<Category> getCategoryById(@PathVariable Long id) {
-        return categoryRepository.findById(id);
-    }
-
     @PutMapping("/{id}")
-    public Category updateCategory(@PathVariable Long id, @RequestBody Category category) {
-        category.setId(id);
-        return categoryRepository.save(category);
+    public ResponseEntity<Category> updateCategory(@PathVariable Long id, @RequestBody Category categoryDetails) {
+        return categoryRepository.findById(id).map(category -> {
+            category.setName(categoryDetails.getName());
+            category.setDescription(categoryDetails.getDescription());
+            Category updated = categoryRepository.save(category);
+            return ResponseEntity.ok(updated);
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public void deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         categoryRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }
