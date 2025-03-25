@@ -12,7 +12,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -30,7 +33,7 @@ public class AuthController {
     private LoginLogRepository loginLogRepository;
 
     @Autowired
-    private UserService userService;  // 注入 UserService 以便注册用户
+    private UserService userService;
 
     // 登录请求DTO
     static class LoginRequest {
@@ -41,7 +44,11 @@ public class AuthController {
     // 登录响应DTO
     static class LoginResponse {
         public String token;
-        public LoginResponse(String token) { this.token = token; }
+        public LocalDateTime lastLoginAt;  // 返回上次登录时间
+        public LoginResponse(String token, LocalDateTime lastLoginAt) {
+            this.token = token;
+            this.lastLoginAt = lastLoginAt;
+        }
     }
 
     // 注册请求DTO
@@ -58,13 +65,27 @@ public class AuthController {
                 new UsernamePasswordAuthenticationToken(request.username, request.password)
             );
             String token = jwtUtil.generateToken(request.username);
-            LoginLog log = new LoginLog();
-            log.setUsername(request.username);
-            log.setSuccess(true);
-            log.setTimestamp(LocalDateTime.now());
-            loginLogRepository.save(log);
-            return ResponseEntity.ok(new LoginResponse(token));
+
+            // 获取用户并更新登录时间
+            Optional<User> userOpt = userService.findByUsername(request.username);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                LocalDateTime lastLoginTime = userService.updateLastLoginTime(user);
+
+                // 记录登录日志
+                LoginLog log = new LoginLog();
+                log.setUsername(request.username);
+                log.setSuccess(true);
+                log.setTimestamp(LocalDateTime.now());
+                loginLogRepository.save(log);
+
+                // 返回Token及上次登录时间
+                return ResponseEntity.ok(new LoginResponse(token, lastLoginTime));
+            } else {
+                return ResponseEntity.status(401).body("用户不存在");
+            }
         } catch (AuthenticationException ex) {
+            // 记录登录失败日志
             LoginLog log = new LoginLog();
             log.setUsername(request.username);
             log.setSuccess(false);
@@ -74,10 +95,8 @@ public class AuthController {
         }
     }
 
-    // 注册接口
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
-        // 检查用户名是否已存在
         Optional<User> existingUser = userService.findByUsername(request.username);
         if (existingUser.isPresent()) {
             return ResponseEntity.status(400).body("用户名已存在");
@@ -86,7 +105,7 @@ public class AuthController {
         try {
             // 创建用户
             User newUser = userService.createUser(request.username, request.password, request.roles);
-            return ResponseEntity.status(201).body(newUser);  // 返回新用户信息，状态码 201 表示创建成功
+            return ResponseEntity.status(201).body(newUser);
         } catch (RuntimeException e) {
             return ResponseEntity.status(500).body("创建用户失败");
         }

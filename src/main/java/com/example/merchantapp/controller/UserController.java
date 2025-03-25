@@ -59,8 +59,12 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-        return ResponseEntity.noContent().build();
+        try {
+            userService.deleteUser(id);  // 调用 Service 进行假删除
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).build();  // 用户未找到时返回404
+        }
     }
 
     // 获取所有角色列表（便于前端在创建/编辑用户时使用）

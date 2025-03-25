@@ -8,7 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
+
 @Service
 public class UserService {
 
@@ -26,11 +29,16 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    // 创建新用户
+    // 创建新用户，设置注册时间
     public User createUser(String username, String rawPassword, Set<String> roleNames) {
         User user = new User();
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(rawPassword));
+
+        // 设置注册时间为当前北京时间
+        user.setCreatedAt(LocalDateTime.now(ZoneId.of("Asia/Shanghai")));
+        user.setLastLoginAt(null);  // 初始时，上次登录时间为空
+
         Set<Role> roles = new HashSet<>();
         if (roleNames == null || roleNames.isEmpty()) {
             Role defaultRole = roleRepository.findByName("MERCHANT")
@@ -45,6 +53,15 @@ public class UserService {
         }
         user.setRoles(roles);
         return userRepository.save(user);
+    }
+
+    // 更新最后登录时间
+    public LocalDateTime updateLastLoginTime(User user) {
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
+        LocalDateTime lastLoginTime = user.getLastLoginAt();
+        user.setLastLoginAt(now);
+        userRepository.save(user);
+        return lastLoginTime;
     }
 
     // 获取所有用户
@@ -71,8 +88,11 @@ public class UserService {
         }).orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    // 删除用户
+    // 删除用户：假删除，用户名加上后缀 "_delete"
     public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        String updatedUsername = user.getUsername() + "_delete";
+        user.setUsername(updatedUsername);  // 假删除，修改用户名
+        userRepository.save(user);
     }
 }
